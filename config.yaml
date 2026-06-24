@@ -1,0 +1,61 @@
+# Tech Radar — source config
+# Each source has enabled + its own options (channels, keywords, feeds...).
+
+sources:
+  anthropic:
+    enabled: true
+    feeds: [news, engineering, changelog, courses, events]
+
+  youtube:
+    enabled: true
+    # channel_id: find it in the page source of the YouTube channel page (search "channelId")
+    channels:
+      # AI / general tech
+      - {name: "Fireship",           id: "UCsBjURrPoezykLs9EqgamOA"}
+      - {name: "AI Explained",       id: "UCNJ1Ymd5yFuUPtn21xtRbbw"}
+      - {name: "Matt Wolfe",         id: "UChpleBmo18P08aKCIgti38g"}
+      - {name: "Matthew Berman",     id: "UCawZsQWqfGSbCI5yjkdVkTA"}
+      - {name: "Two Minute Papers",  id: "UCbfYPyITQ-7l4upoX8nvctg"}
+      # Backend / systems / cloud
+      - {name: "Hussein Nasser",     id: "UC_ML5xP23TOWKUcc-oAE_Eg"}
+      - {name: "ByteByteGo",         id: "@ByteByteGo"}
+      - {name: "TechWorld with Nana", id: "@TechWorldwithNana"}
+    # Keyword filter (case-insensitive, substring match). Empty = no filter.
+    keywords: []
+
+  huggingface:
+    enabled: true
+
+  hackernews:
+    enabled: true
+
+  cloudflare:
+    enabled: true
+
+  devto:
+    enabled: true
+    # Keyword filter — dev.to has high volume, filter helps (empty = no filter)
+    keywords: []
+
+  engineering:
+    enabled: true
+    # Empty = all feeds; specify labels to enable only some
+    # Options: "Martin Fowler", "AWS Blog", "The New Stack", "InfoQ"
+    feeds: []
+    keywords: []
+
+  github_trending:
+    enabled: true
+    # Languages to track (empty = all languages)
+    languages: [typescript, python, go, rust, kotlin, java]
+    # Only keep repos with these keywords in title/description
+    keywords: []
+
+  security:
+    enabled: true
+    # Empty = all feeds; specify names to enable only some
+    # Options: "The Hacker News", "Bleeping Computer", "Krebs on Security",
+    #          "Schneier on Security", "SecurityWeek", "Google Project Zero"
+    feeds: []
+    # Keyword filter (case-insensitive, empty = no filter)
+    keywords: []
