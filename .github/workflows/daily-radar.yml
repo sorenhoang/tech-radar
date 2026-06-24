@@ -1,0 +1,48 @@
+name: Daily Tech Radar
+
+on:
+  schedule:
+    - cron: "30 23 * * *" # 06:30 GMT+7
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  daily-radar:
+    runs-on: ubuntu-latest
+    env:
+      HOME: ${{ github.workspace }}
+      TECH_RADAR_DISCORD_WEBHOOK_URL: ${{ secrets.TECH_RADAR_DISCORD_WEBHOOK_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 lxml pyyaml
+
+      - name: Run tests
+        run: python -m unittest discover -s tests
+
+      - name: Send Discord digest
+        run: python radar.py
+
+      - name: Commit radar state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .tech-radar/seen.json
+          if git diff --cached --quiet; then
+            echo "No state changes to commit."
+          else
+            git commit -m "Update radar state"
+            git push
+          fi

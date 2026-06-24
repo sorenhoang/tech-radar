@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Tech Radar — scans multiple tech/AI sources and sends grouped notifications to Slack.
+"""Tech Radar — scans multiple tech/AI sources and sends grouped notifications to Discord.
 
 State: ~/.tech-radar/seen.json
 Usage:
-  python radar.py             # scan + send to Slack
+  python radar.py             # scan + send to Discord
   python radar.py --dry-run   # print to terminal, no send
   python radar.py --init      # mark all current items as seen (first run)
   python radar.py --reset     # clear state
@@ -14,7 +14,8 @@ import argparse
 import importlib
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -35,12 +36,18 @@ SOURCE_MODULES = [
     "security",
 ]
 
+DIGEST_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
+
 
 def load_state() -> dict:
     if not STATE_FILE.exists():
         return {"seen": [], "last_run": None}
     try:
-        return json.loads(STATE_FILE.read_text())
+        state = json.loads(STATE_FILE.read_text())
+        state.setdefault("seen", [])
+        state.setdefault("last_run", None)
+        state.pop("sent_days", None)
+        return state
     except Exception:
         log("⚠️  Could not parse state file, starting fresh")
         return {"seen": [], "last_run": None}
@@ -73,6 +80,24 @@ def diff_new(items: list[Item], seen_ids: set[str]) -> list[Item]:
         seen_now.add(item.id)
         new.append(item)
     return new
+
+def digest_day_for(now: datetime | None = None):
+    """Return the local day this morning digest should cover."""
+    current = now or datetime.now(DIGEST_TZ)
+    local_now = current.astimezone(DIGEST_TZ)
+    return (local_now - timedelta(days=1)).date()
+
+
+def filter_digest_items(items: list[Item], digest_day) -> list[Item]:
+    """Keep only items published on the digest day in GMT+7."""
+    kept: list[Item] = []
+    for item in items:
+        dt = parse_published(item.published)
+        if dt is None:
+            continue
+        if dt.astimezone(DIGEST_TZ).date() == digest_day:
+            kept.append(item)
+    return kept
 
 
 def filter_today(items: list[Item]) -> list[Item]:
@@ -127,17 +152,21 @@ def main() -> int:
 
     cfg = load_config()
     state = load_state()
-    seen_ids = set(state.get("seen", []))
+    digest_day = digest_day_for()
 
+    seen_ids = set(state.get("seen", []))
     items = fetch_all(cfg)
     if not items:
         log("⚠️  No items fetched.")
         return 1
 
     new_items = diff_new(items, seen_ids)
-    today_items = filter_today(new_items)
-    log(f"Total: {len(items)} items, {len(new_items)} new, {len(today_items)} from today")
-    new_items = today_items
+    digest_items = filter_digest_items(new_items, digest_day)
+    log(
+        f"Total: {len(items)} items, {len(new_items)} new, "
+        f"{len(digest_items)} for {digest_day.isoformat()}"
+    )
+    new_items = digest_items
 
     merged = list(dict.fromkeys(state.get("seen", []) + [i.id for i in items]))[-800:]
     state["seen"] = merged
@@ -150,32 +179,21 @@ def main() -> int:
 
     if not new_items:
         save_state(state)
-        log("✨ No new items.")
+        log(f"✨ No new items for {digest_day.isoformat()}.")
         return 0
 
     if args.dry_run:
         print_terminal(new_items)
-    else:
-        from notifiers.slack import format_slack_message, send_slack
-        payload = format_slack_message(new_items)
-        if not send_slack(payload):
-            log("⚠️  Slack send failed — not updating state, will retry next run.")
-            print_terminal(new_items)
-            return 2
+        return 0
 
-        from notifiers.video import build_video
-        try:
-            build_video(new_items)
-        except Exception as e:
-            log(f"  ✗ Video build failed: {e}")
+    from notifiers.discord import format_discord_message, send_discord
+    payload = format_discord_message(new_items, digest_day)
+    if not send_discord(payload):
+        log("⚠️  Discord send failed — not marking digest sent, will retry next run.")
+        print_terminal(new_items)
+        return 2
 
-        from notifiers.site import build_site
-        try:
-            build_site(new_items)
-        except Exception as e:
-            log(f"  ✗ Site build failed: {e}")
-
-        save_state(state)
+    save_state(state)
     return 0
 
 

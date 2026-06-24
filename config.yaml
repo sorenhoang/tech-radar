@@ -34,7 +34,10 @@ sources:
 
   devto:
     enabled: true
-    # Keyword filter — dev.to has high volume, filter helps (empty = no filter)
+    # Empty = all feeds; specify labels to enable only some.
+    # Options: "dev.to", "daily.dev"
+    feeds: []
+    # Keyword filter — community feeds can have high volume (empty = no filter)
     keywords: []
 
   engineering:
@@ -46,9 +49,24 @@ sources:
 
   github_trending:
     enabled: true
-    # Languages to track (empty = all languages)
-    languages: [typescript, python, go, rust, kotlin, java]
-    # Only keep repos with these keywords in title/description
+    # Topic-based filters over the all-language trending feed.
+    # Each topic keeps repos whose title or description contains one of its keywords.
+    topics:
+      - name: "Database"
+        keywords: [database, postgres, postgresql, mysql, sqlite, redis, mongodb, query, index, migration, oltp, olap, sql]
+      - name: "Software Engineering"
+        keywords: [software engineering, developer, code review, testing, architecture, backend, api, observability, opentelemetry, logging, tracing, reliability, scalability, refactoring, ci/cd, deployment, auth, concurrency]
+      - name: "Distributed Systems"
+        keywords: [distributed, consensus, raft, kubernetes, queue, streaming, microservice, database, cache]
+      - name: "Performance"
+        keywords: [performance, optimization, optimize, fast, latency, benchmark, profiling, memory]
+      - name: "AI"
+        keywords: [ai, agent, llm, machine learning, embedding, rag, model, inference]
+      - name: "Finance"
+        keywords: [finance, fintech, trading, portfolio, stock, crypto, investment, payment]
+      - name: "Productivity"
+        keywords: [productivity, automation, workflow, notes, task, calendar, email, document]
+    # Optional extra global keyword filter after topic matching.
     keywords: []
 
   security:

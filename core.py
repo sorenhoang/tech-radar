@@ -11,12 +11,12 @@ LOG_FILE = STATE_DIR / "radar.log"
 
 USER_AGENT = "Mozilla/5.0 (tech-radar/1.0)"
 HTTP_TIMEOUT = 20
-MAX_ITEMS_PER_FEED = 20
+MAX_ITEMS_PER_FEED = 10
 
 
 @dataclass
 class Item:
-    source: str           # group key — drives Slack section grouping
+    source: str           # group key — drives digest section grouping
     title: str
     url: str
     published: str = ""
