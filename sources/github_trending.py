@@ -48,6 +48,16 @@ def _filter_by_topics(items: list[Item], topics: list[dict]) -> list[Item]:
 
 def fetch(cfg: dict) -> list[Item]:
     topics = cfg.get("topics") or DEFAULT_TOPICS
-    items = fetch_feed("GitHub Trending", None, f"{_BASE}/all.xml")
-    topic_items = _filter_by_topics(items, topics)
-    return filter_by_keywords(topic_items, cfg.get("keywords", []))
+    # Fetch 25 so topic labelling has headroom; radar.py caps the final list at 10.
+    items = fetch_feed("GitHub Trending", None, f"{_BASE}/all.xml", max_items=25)
+    # Label items that match a topic; keep all items regardless (daily ranking, not a filter).
+    labelled: list[Item] = []
+    for item in items:
+        for topic in topics:
+            if _matches_topic(item, topic):
+                labelled.append(_with_topic_label(item, topic.get("name") or "Topic"))
+                break
+        else:
+            labelled.append(item)
+    keywords = cfg.get("keywords", [])
+    return filter_by_keywords(labelled, keywords) if keywords else labelled

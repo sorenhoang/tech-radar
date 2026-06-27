@@ -160,13 +160,18 @@ def main() -> int:
         log("⚠️  No items fetched.")
         return 1
 
-    new_items = diff_new(items, seen_ids)
-    digest_items = filter_digest_items(new_items, digest_day)
+    # GitHub Trending is a daily ranking snapshot — items carry no per-item date,
+    # so the normal date/dedup pipeline would drop them all.  Pull them out first.
+    trending = [i for i in items if i.source == "GitHub Trending"][:10]
+    other_items = [i for i in items if i.source != "GitHub Trending"]
+
+    new_other = diff_new(other_items, seen_ids)
+    digest_other = filter_digest_items(new_other, digest_day)
     log(
-        f"Total: {len(items)} items, {len(new_items)} new, "
-        f"{len(digest_items)} for {digest_day.isoformat()}"
+        f"Total: {len(items)} items, {len(new_other)} new (excl. trending), "
+        f"{len(digest_other)} for {digest_day.isoformat()}, {len(trending)} trending"
     )
-    new_items = digest_items
+    new_items = digest_other + trending
 
     merged = list(dict.fromkeys(state.get("seen", []) + [i.id for i in items]))[-800:]
     state["seen"] = merged
