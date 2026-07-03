@@ -1,4 +1,4 @@
-# Tech Radar
+# Tech Radar [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sorenhoang/tech-radar)
 
 Daily tech/AI radar that fetches multiple sources, keeps only new/unseen items from yesterday in GMT+7, and sends a morning digest to Discord.
 
